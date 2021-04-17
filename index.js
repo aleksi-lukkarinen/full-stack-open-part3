@@ -1,5 +1,13 @@
 const PORT_TO_LISTEN = process.env.PORT || 3001
 
+const HTTP_STATUS_NOT_FOUND = 404
+
+const URL_BASE = "/"
+const URL_INFO = URL_BASE + "info"
+const URL_API_ROOT = URL_BASE + "api/"
+const URL_API_PERSONS = URL_API_ROOT + "persons"
+const URL_API_SINGLE_PERSON = URL_API_PERSONS + "/:id"
+
 const entries = [
   {
     "id": 1,
@@ -66,11 +74,11 @@ const entries = [
 const express = require("express")
 const app = express()
 
-app.get("/", (req, res) => {
+app.get(URL_BASE, (req, res) => {
   res.send("")
 })
 
-app.get("/info", (req, res) => {
+app.get(URL_INFO, (req, res) => {
   const nowDate = new Date()
 
   let content = "<h1>Phonebook Server: Status</h1>"
@@ -81,8 +89,20 @@ app.get("/info", (req, res) => {
   res.send(content)
 })
 
-app.get("/api/persons", (req, res) => {
+app.get(URL_API_PERSONS, (req, res) => {
   res.json(entries)
+})
+
+app.get(URL_API_SINGLE_PERSON, (req, res) => {
+  const idToFind = parseInt(req.params.id)
+  const entry = entries.find(e => e.id === idToFind)
+
+  if (entry) {
+    res.json(entry)
+  }
+  else {
+    res.status(HTTP_STATUS_NOT_FOUND).end()
+  }
 })
 
 app.listen(PORT_TO_LISTEN, () => {

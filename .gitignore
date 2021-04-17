@@ -1,9 +1,10 @@
-**/.cache-main
-**/.DS_Store
 **/.git/*
 **/.history/*
 **/.vscode/*
 **/node_modules/*
+**/.cache-main
+**/.DS_Store
+**/.env
 **/*.bak
 **/*.log
 **/*.min.js
