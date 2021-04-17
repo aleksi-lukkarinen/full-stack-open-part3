@@ -1,6 +1,7 @@
 const PORT_TO_LISTEN = process.env.PORT || 3001
 
 const HTTP_STATUS_NOT_FOUND = 404
+const HTTP_STATUS_NO_CONTENT = 204
 
 const URL_BASE = "/"
 const URL_INFO = URL_BASE + "info"
@@ -8,7 +9,7 @@ const URL_API_ROOT = URL_BASE + "api/"
 const URL_API_PERSONS = URL_API_ROOT + "persons"
 const URL_API_SINGLE_PERSON = URL_API_PERSONS + "/:id"
 
-const entries = [
+let entries = [
   {
     "id": 1,
     "name": "Arto Hellas",
@@ -74,6 +75,15 @@ const entries = [
 const express = require("express")
 const app = express()
 
+function findResourceIdFrom(request) {
+  return parseInt(request.params.id)
+}
+
+function findEntryByUsingIdFrom(request) {
+  const idToFind = findResourceIdFrom(request)
+  return entries.find(e => e.id === idToFind)
+}
+
 app.get(URL_BASE, (req, res) => {
   res.send("")
 })
@@ -94,8 +104,7 @@ app.get(URL_API_PERSONS, (req, res) => {
 })
 
 app.get(URL_API_SINGLE_PERSON, (req, res) => {
-  const idToFind = parseInt(req.params.id)
-  const entry = entries.find(e => e.id === idToFind)
+  const entry = findEntryByUsingIdFrom(req)
 
   if (entry) {
     res.json(entry)
@@ -103,6 +112,13 @@ app.get(URL_API_SINGLE_PERSON, (req, res) => {
   else {
     res.status(HTTP_STATUS_NOT_FOUND).end()
   }
+})
+
+app.delete(URL_API_SINGLE_PERSON, (req, res) => {
+  const idToDelete = findResourceIdFrom(req)
+  entries = entries.filter(e => e.id !== idToDelete)
+
+  res.status(HTTP_STATUS_NO_CONTENT).end()
 })
 
 app.listen(PORT_TO_LISTEN, () => {
