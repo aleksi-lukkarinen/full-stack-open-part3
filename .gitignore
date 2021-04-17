@@ -1,0 +1,13 @@
+**/.cache-main
+**/.DS_Store
+**/.git/*
+**/.history/*
+**/.vscode/*
+**/node_modules/*
+**/*.bak
+**/*.log
+**/*.min.js
+**/*.tmp
+**/*.vpp.bak_*
+**/*.vpp.lck
+**/*~
