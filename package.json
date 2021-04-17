@@ -12,5 +12,8 @@
     "url": "git+https://github.com/aleksi-lukkarinen/full-stack-open-part3.git"
   },
   "author": "Aleksi Lukkarinen",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
 }
