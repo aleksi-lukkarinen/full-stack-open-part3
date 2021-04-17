@@ -1,4 +1,4 @@
-const http = require("http")
+const PORT_TO_LISTEN = process.env.PORT || 3001
 
 const entries = [
   {
@@ -63,12 +63,17 @@ const entries = [
   }
 ]
 
-const app = http.createServer((request, response) => {
-  response.writeHead(200, {"Content-Type": "text/json"})
-  response.end(JSON.stringify(entries))
+const express = require("express")
+const app = express()
+
+app.get("/", (req, res) => {
+  res.send("<h1>Hoi maailma!</h1>")
 })
 
-const port = 3001
-app.listen(port)
+app.get("/api/persons", (req, res) => {
+  res.json(entries)
+})
 
-console.log(`Phonebook server running on port ${port}.`)
+app.listen(PORT_TO_LISTEN, () => {
+  console.log(`Phonebook server running on port ${PORT_TO_LISTEN}.`)
+})
