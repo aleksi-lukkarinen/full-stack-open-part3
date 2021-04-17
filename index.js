@@ -67,7 +67,18 @@ const express = require("express")
 const app = express()
 
 app.get("/", (req, res) => {
-  res.send("<h1>Hoi maailma!</h1>")
+  res.send("")
+})
+
+app.get("/info", (req, res) => {
+  const nowDate = new Date()
+
+  let content = "<h1>Phonebook Server: Status</h1>"
+  content += `<div>Phonebook has info for ${entries.length} people</div>`
+  content += "<br/>"
+  content += `<div>${nowDate}</div>`
+
+  res.send(content)
 })
 
 app.get("/api/persons", (req, res) => {
