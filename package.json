@@ -1,0 +1,16 @@
+{
+  "name": "phonebook-server-fso3",
+  "version": "0.0.1",
+  "description": "A phone book server for the third part of the Full Stack Open course",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aleksi-lukkarinen/full-stack-open-part3.git"
+  },
+  "author": "Aleksi Lukkarinen",
+  "license": "MIT"
+}
