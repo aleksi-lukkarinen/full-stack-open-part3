@@ -1,4 +1,6 @@
-const PORT_TO_LISTEN = process.env.PORT || 3001
+require("dotenv").config()
+
+const PORT_TO_LISTEN = process.env.PORT
 
 const HTTP_STATUS_NO_CONTENT = 204
 const HTTP_STATUS_BAD_REQUEST = 400
@@ -117,7 +119,9 @@ function findEntryByUsingIdFrom(request) {
 }
 
 
+const Person = require("./models/person")
 
+console.log("Setting up HTTP server...")
 
 const express = require("express")
 const app = express()
@@ -178,7 +182,13 @@ app.get(URL_INFO, (req, res) => {
 
 // Retrieve all entries
 app.get(URL_API_PERSONS, (req, res) => {
-  res.json(entries)
+  Person.find({})
+    .then(entries => {
+      res.json(entries)
+    })
+    .catch(reason => {
+      console.error("Retrieving entries failed: ", reason)
+    })
 })
 
 // Add an entry

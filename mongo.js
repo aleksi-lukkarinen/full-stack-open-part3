@@ -1,6 +1,6 @@
 const MONGO_USER_NAME = "PhoneBookApp"
 const MONGO_CLUSTER_NAME = "free"
-const MONGO_DATABASE_NAME = "test"
+const MONGO_DATABASE_NAME = "PhoneBook"
 
 const OPMODE_UNKNOWN = 0
 const OPMODE_LIST = 1
