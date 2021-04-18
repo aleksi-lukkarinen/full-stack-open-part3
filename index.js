@@ -108,7 +108,7 @@ function validateNonEmptyString(plainTextName, value) {
 }
 
 function findResourceIdFrom(request) {
-  return parseInt(request.params.id)
+  return Number(request.params.id)
 }
 
 function findEntryByUsingIdFrom(request) {
