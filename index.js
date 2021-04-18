@@ -120,12 +120,37 @@ function findEntryByUsingIdFrom(request) {
 
 
 const express = require("express")
-const morgan = require("morgan")
-
 const app = express()
 
 app.use(express.json())
-app.use(morgan("tiny"))
+
+const morgan = require("morgan")
+
+morgan.token(
+  "content-as-json",
+  function (req, res) {
+    return JSON.stringify(req.body)
+  }
+)
+
+function phoneBookLogFormat(tokens, req, res) {
+  const method = tokens.method(req, res)
+
+  let s = [
+    method,
+    tokens.url(req, res),
+    tokens.status(req, res),
+    tokens.res(req, res, "content-length"), "-",
+    tokens["response-time"](req, res), "ms"
+  ].join(" ")
+
+  if (method.toUpperCase() === "POST") {
+    s += " " + tokens["content-as-json"](req, res)
+  }
+
+  return s
+}
+app.use(morgan(phoneBookLogFormat))
 
 
 
