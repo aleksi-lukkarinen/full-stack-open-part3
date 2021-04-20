@@ -10,6 +10,7 @@ const PORT_TO_LISTEN = process.env.PORT
 const HTTP_STATUS_NO_CONTENT = 204
 const HTTP_STATUS_BAD_REQUEST = 400
 const HTTP_STATUS_NOT_FOUND = 404
+const HTTP_STATUS_INTERNAL_SERVER_ERROR = 500
 
 const URL_BASE = "/"
 const URL_INFO = URL_BASE + "info"
@@ -140,12 +141,12 @@ app.use(morgan(phoneBookLogFormat))
 
 
 // Handle the base URL
-app.get(URL_BASE, (request, response, next) => {
+app.get(URL_BASE, (request, response) => {
   response.send("")
 })
 
 // Generate the info page
-app.get(URL_INFO, (request, response, next) => {
+app.get(URL_INFO, (request, response) => {
   const nowDate = new Date()
 
   let content = "<h1>Phonebook Server: Status</h1>"
@@ -159,12 +160,10 @@ app.get(URL_INFO, (request, response, next) => {
 // Retrieve all entries
 app.get(URL_API_PERSONS, (request, response, next) => {
   Person.find({})
-    .then(entries => {
+    .then(entries =>
       response.json(entries)
-    })
-    .catch(reason => {
-      console.error("Retrieving entries failed: ", reason)
-    })
+    )
+    .catch(error => next(error))
 })
 
 // Add an entry
@@ -177,7 +176,9 @@ app.post(URL_API_PERSONS, (request, response, next) => {
   })
 
   entryToAdd.save()
-    .then(savedEntry => response.json(savedEntry))
+    .then(savedEntry =>
+      response.json(savedEntry)
+    )
     .catch(error => next(error))
 })
 
@@ -185,13 +186,14 @@ app.post(URL_API_PERSONS, (request, response, next) => {
 app.get(URL_API_SINGLE_PERSON, (request, response, next) => {
   const idToFind = request.params.id
 
-  Person.findById(idToFind).then(entry => {
-    if (entry)
-      response.json(entry)
-    else
-      response.status(HTTP_STATUS_NOT_FOUND).end()
-  })
-  .catch(error => next(error))
+  Person.findById(idToFind)
+    .then(entry => {
+      if (entry)
+        response.json(entry)
+      else
+        response.status(HTTP_STATUS_NOT_FOUND).end()
+    })
+    .catch(error => next(error))
 })
 
 // Delete a single entry
@@ -199,33 +201,43 @@ app.delete(URL_API_SINGLE_PERSON, (request, response, next) => {
   const idToDelete = request.params.id
 
   Person.findByIdAndRemove(idToDelete)
-    .then(result => {
-      response.status(HTTP_STATUS_NO_CONTENT).end()
-    })
+    .then(response.status(HTTP_STATUS_NO_CONTENT).end())
     .catch(error => next(error))
 })
 
 
 
 const unknownEndpoint = (request, response, next) => {
-  const status = HTTP_STATUS_NOT_FOUND
-  const data = {
-    status: status,
-    errorCode: ERR_UNKNOWN_ENDPOINT,
-    message: ErrorMessages.ERR_UNKNOWN_ENDPOINT,
-  }
-  response.status(status).send(data)
+  const error = new Error(ErrorMessages[ERR_UNKNOWN_ENDPOINT])
+  error.name = "UnknownEndpointError"
+  next(error)
 }
 app.use(unknownEndpoint)
 
 
 
 const errorHandler = (error, request, response, next) => {
+  const timestamp = new Date()
+
   console.error(error)
 
   let responseStatus = undefined
   let responseData = {}
-  if (error.name === "CastError") {
+  if (error.name === "UnknownEndpointError") {
+    responseStatus = HTTP_STATUS_NOT_FOUND
+    responseData = {
+      status: responseStatus,
+      errors: [
+        {
+          errorCode: ERR_UNKNOWN_ENDPOINT,
+          message: error.message,
+          method: request.method,
+          path: request.url,
+        }
+      ]
+    }
+  }
+  else if (error.name === "CastError") {
     if (error.kind === "ObjectId" && error.path === "_id") {
       responseStatus = HTTP_STATUS_BAD_REQUEST
       responseData = {
@@ -291,10 +303,12 @@ const errorHandler = (error, request, response, next) => {
   }
 
   if (responseStatus) {
+    responseData.timestamp = timestamp
+
     return response.status(responseStatus).send(responseData)
   }
 
-  next(error)
+  return response.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).end()
 }
 app.use(errorHandler)
 
