@@ -197,9 +197,12 @@ app.get(URL_API_SINGLE_PERSON, (request, response, next) => {
 // Delete a single entry
 app.delete(URL_API_SINGLE_PERSON, (request, response, next) => {
   const idToDelete = request.params.id
-  entries = entries.filter(e => e.id !== idToDelete)
 
-  response.status(HTTP_STATUS_NO_CONTENT).end()
+  Person.findByIdAndRemove(idToDelete)
+    .then(result => {
+      response.status(HTTP_STATUS_NO_CONTENT).end()
+    })
+    .catch(error => next(error))
 })
 
 
