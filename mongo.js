@@ -11,9 +11,9 @@ const mongoose = require("mongoose")
 function parseArgs(args) {
   const NUM_ARGS = args.length
   const OP_MODE =
-          NUM_ARGS === 3 ? OPMODE_LIST :
-          NUM_ARGS === 5 ? OPMODE_ADD :
-          OPMODE_UNKNOWN
+    NUM_ARGS === 3 ? OPMODE_LIST :
+      NUM_ARGS === 5 ? OPMODE_ADD :
+        OPMODE_UNKNOWN
 
   if (OP_MODE === OPMODE_UNKNOWN) {
     console.log("Parameters: <password> [<name> <phone number>]")
@@ -55,32 +55,32 @@ const personSchema = new mongoose.Schema({
 const Person = mongoose.model("Person", personSchema)
 
 switch (OPERATION_MODE) {
-  case OPMODE_LIST:
-    console.log("Retrieving phonebook entries...")
-    Person.find({}).then(result => {
-      result.forEach(entry => {
-        console.log(`${entry.name}: ${entry.phoneNumber}`)
-      })
-      mongoose.connection.close()
+case OPMODE_LIST:
+  console.log("Retrieving phonebook entries...")
+  Person.find({}).then(result => {
+    result.forEach(entry => {
+      console.log(`${entry.name}: ${entry.phoneNumber}`)
     })
-    break
+    mongoose.connection.close()
+  })
+  break
 
-  case OPMODE_ADD:
-    console.log("Adding a new phonebook entry...")
+case OPMODE_ADD:
+  console.log("Adding a new phonebook entry...")
 
-    const name = process.argv[3].trim()
-    const number = process.argv[4].trim()
+  const name = process.argv[3].trim()
+  const number = process.argv[4].trim()
 
-    const entry = new Person({
-      name: name,
-      phoneNumber: number,
-    })
-    entry.save().then(response => {
-      console.log("Entry added successfully!")
-      mongoose.connection.close()
-    })
-    break
+  const entry = new Person({
+    name: name,
+    phoneNumber: number,
+  })
+  entry.save().then(() => {
+    console.log("Entry added successfully!")
+    mongoose.connection.close()
+  })
+  break
 
-  default:
-    console.log("Unexpected error: Unknown operation mode!")
+default:
+  console.log("Unexpected error: Unknown operation mode!")
 }

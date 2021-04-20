@@ -1,4 +1,3 @@
-const mongoose = require("mongoose")
 const express = require("express")
 const cors = require("cors")
 const morgan = require("morgan")
@@ -50,14 +49,12 @@ app.use(express.json())
 
 morgan.token(
   "content-as-json",
-  function (req, res) {
+  function (req, res) { // eslint-disable-line no-unused-vars
     return JSON.stringify(req.body)
   }
 )
 
-function phoneBookLogFormat(
-      tokens, request, response) {
-
+function phoneBookLogFormat(tokens, request, response) {
   const method = tokens.method(request, response)
 
   let s = [
@@ -83,7 +80,7 @@ app.get(URL_BASE, (request, response) => {
 })
 
 // Generate the info page
-app.get(URL_INFO, (request, response) => {
+app.get(URL_INFO, (request, response, next) => {
   const timestamp = new Date()
 
   Person.find({})
@@ -132,7 +129,7 @@ app.put(URL_API_SINGLE_PERSON, (request, response, next) => {
     phoneNumber: givenEntryData.phoneNumber,
   }
 
-  Person.findByIdAndUpdate(request.params.id, entryToUpdate, {new: true})
+  Person.findByIdAndUpdate(request.params.id, entryToUpdate, { new: true })
     .then(updatedEntry => {
       response.json(updatedEntry)
     })
@@ -172,7 +169,7 @@ const unknownEndpoint = (request, response, next) => {
 app.use(unknownEndpoint)
 
 
-
+/* eslint-disable-next-line no-unused-vars */
 const errorHandler = (error, request, response, next) => {
   const timestamp = new Date()
 
@@ -216,6 +213,8 @@ const errorHandler = (error, request, response, next) => {
   else if (error.name === "ValidationError") {
     const internalErrors = Object.entries(error.errors)
     const resultErrors = []
+
+    /* eslint-disable-next-line no-unused-vars */
     internalErrors.forEach(([fieldName, fieldError]) => {
       let errorCode = undefined
       const errorProps = fieldError.properties
