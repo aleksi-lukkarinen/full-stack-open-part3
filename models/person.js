@@ -7,6 +7,7 @@
 //   Donald Duck    DUCKBURG-313 1313
 //   Gyro Gearloose DUCKBURG-999 1243 6978
 //   Roger Rabbit   TOONTOWN-1928 7364
+//   Fred Flintsone BEDROCK-444
 
 const MONGO_USER_NAME = process.env.MONGO_USER_NAME
 const MONGO_PASSWORD = process.env.MONGO_PASSWORD
