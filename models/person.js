@@ -5,6 +5,9 @@ const MONGO_DATABASE_NAME = process.env.MONGO_DATABASE_NAME
 
 const EXIT_CODE_FAILURE = 1
 
+const MIN_LENGTH_NAME = 3
+const MIN_LENGTH_PHONENUMBER = 8
+
 function buildMongoConnUrl(userName, password, clusterName, databaseName) {
   const url =
       `mongodb+srv://${userName}:${password}` +
@@ -16,6 +19,7 @@ function buildMongoConnUrl(userName, password, clusterName, databaseName) {
 
 
 const mongoose = require("mongoose")
+var uniqueValidator = require("mongoose-unique-validator")
 
 const MONGO_CNN_URL = buildMongoConnUrl(
   MONGO_USER_NAME, MONGO_PASSWORD, MONGO_CLUSTER_NAME, MONGO_DATABASE_NAME)
@@ -36,9 +40,23 @@ mongoose
 
 console.log("Setting up database schemata...")
 const personSchema = new mongoose.Schema({
-  name: String,
-  phoneNumber: String,
+  name: {
+    type: String,
+    required: true,
+    unique: true,
+    uniqueCaseInsensitive: true,
+    minlength: MIN_LENGTH_NAME,
+    trim: true,
+    index: true,
+  },
+  phoneNumber: {
+    type: String,
+    required: true,
+    minlength: MIN_LENGTH_PHONENUMBER,
+    trim: true,
+  },
 })
+personSchema.plugin(uniqueValidator)
 personSchema.set("toJSON", {
   transform: (document, returnedObject) => {
     returnedObject.id = returnedObject._id.toString()
@@ -47,4 +65,8 @@ personSchema.set("toJSON", {
   }
 })
 
-module.exports = mongoose.model("Person", personSchema)
+module.exports = {
+  model: mongoose.model("Person", personSchema),
+  MIN_LENGTH_NAME: MIN_LENGTH_NAME,
+  MIN_LENGTH_PHONENUMBER: MIN_LENGTH_PHONENUMBER,
+}

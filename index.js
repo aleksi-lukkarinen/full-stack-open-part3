@@ -1,3 +1,8 @@
+const mongoose = require("mongoose")
+const express = require("express")
+const cors = require("cors")
+const morgan = require("morgan")
+
 require("dotenv").config()
 
 const PORT_TO_LISTEN = process.env.PORT
@@ -11,6 +16,14 @@ const URL_INFO = URL_BASE + "info"
 const URL_API_ROOT = URL_BASE + "api/"
 const URL_API_PERSONS = URL_API_ROOT + "persons"
 const URL_API_SINGLE_PERSON = URL_API_PERSONS + "/:id"
+
+const ERR_FIRST = 0
+const ERR_UNKNOWN_ENDPOINT = ERR_FIRST + 0
+const ERR_MALFORMATTED_ID = ERR_FIRST + 1
+const ERR_ENTRY_WITH_NAME_EXISTS = ERR_FIRST + 2
+const ERR_ENTRY_WITH_ID_DOES_NOT_EXIST = ERR_FIRST + 3
+const ERR_NAME_TOO_SHORT = ERR_FIRST + 4
+const ERR_PHONENUMBER_TOO_SHORT = ERR_FIRST + 5
 
 let entries = [
   {
@@ -75,65 +88,27 @@ let entries = [
   }
 ]
 
-function generateEntryId() {
-  // An horrible way of generating IDs!!!! I wash my hands...
-  const usedIds = entries.map(e => e.id)
-  let idCandidate = 0
-  do {
-    idCandidate = Math.floor(Math.random() * Number.MAX_VALUE)
-  } while (usedIds.findIndex(i => i === idCandidate) >= 0)
+const PersonModule = require("./models/person")
+const Person = PersonModule.model
 
-  return idCandidate
-}
+const ErrorMessages = {}
+ErrorMessages[ERR_UNKNOWN_ENDPOINT] = "Unknown endpoint"
+ErrorMessages[ERR_MALFORMATTED_ID] = "Malformatted ID value"
+ErrorMessages[ERR_ENTRY_WITH_NAME_EXISTS] =
+    "The phone book already has an entry with the given name"
+ErrorMessages[ERR_ENTRY_WITH_ID_DOES_NOT_EXIST] =
+    "The phone book does not contain an entry with the given name"
+ErrorMessages[ERR_NAME_TOO_SHORT] =
+    `The name of the person has to be at least ${PersonModule.MIN_LENGTH_NAME} characters long`
+ErrorMessages[ERR_PHONENUMBER_TOO_SHORT] =
+    `The phone number has to be at least ${PersonModule.MIN_LENGTH_PHONENUMBER} characters long`
 
-function validateNonEmptyString(plainTextName, value) {
-  // returns [strErr, cleanedString]
-
-  function errorState(name, error) {
-    let n = name.trim()
-    n = n.charAt(0).toUpperCase() + n.slice(1).toLowerCase()
-
-    return [`${n} ${error.trim()}`, ""]
-  }
-
-  if (!value)
-    return errorState(plainTextName, "is missing")
-
-  if (typeof(value) !== "string")
-    return errorState(plainTextName, "is not a string")
-
-  const cleanedString = value.trim()
-  if (cleanedString < 1)
-    return errorState(plainTextName, "is empty")
-
-  return ["", cleanedString]
-}
-
-function findResourceIdFrom(request) {
-  return Number(request.params.id)
-}
-
-function findEntryByUsingIdFrom(request) {
-  const idToFind = findResourceIdFrom(request)
-  return entries.find(e => e.id === idToFind)
-}
-
-
-const Person = require("./models/person")
 
 console.log("Setting up HTTP server...")
-
-const express = require("express")
 const app = express()
-
-const cors = require("cors")
 app.use(cors())
-
 app.use(express.static("build"))
-
 app.use(express.json())
-
-const morgan = require("morgan")
 
 morgan.token(
   "content-as-json",
@@ -142,19 +117,21 @@ morgan.token(
   }
 )
 
-function phoneBookLogFormat(tokens, req, res) {
-  const method = tokens.method(req, res)
+function phoneBookLogFormat(
+      tokens, request, response) {
+
+  const method = tokens.method(request, response)
 
   let s = [
     method,
-    tokens.url(req, res),
-    tokens.status(req, res),
-    tokens.res(req, res, "content-length"), "-",
-    tokens["response-time"](req, res), "ms"
+    tokens.url(request, response),
+    tokens.status(request, response),
+    tokens.res(request, response, "content-length"), "-",
+    tokens["response-time"](request, response), "ms"
   ].join(" ")
 
   if (method.toUpperCase() === "POST") {
-    s += " " + tokens["content-as-json"](req, res)
+    s += " " + tokens["content-as-json"](request, response)
   }
 
   return s
@@ -162,14 +139,13 @@ function phoneBookLogFormat(tokens, req, res) {
 app.use(morgan(phoneBookLogFormat))
 
 
-
 // Handle the base URL
-app.get(URL_BASE, (req, res) => {
-  res.send("")
+app.get(URL_BASE, (request, response, next) => {
+  response.send("")
 })
 
 // Generate the info page
-app.get(URL_INFO, (req, res) => {
+app.get(URL_INFO, (request, response, next) => {
   const nowDate = new Date()
 
   let content = "<h1>Phonebook Server: Status</h1>"
@@ -177,14 +153,14 @@ app.get(URL_INFO, (req, res) => {
   content += "<br/>"
   content += `<div>${nowDate}</div>`
 
-  res.send(content)
+  response.send(content)
 })
 
 // Retrieve all entries
-app.get(URL_API_PERSONS, (req, res) => {
+app.get(URL_API_PERSONS, (request, response, next) => {
   Person.find({})
     .then(entries => {
-      res.json(entries)
+      response.json(entries)
     })
     .catch(reason => {
       console.error("Retrieving entries failed: ", reason)
@@ -192,61 +168,133 @@ app.get(URL_API_PERSONS, (req, res) => {
 })
 
 // Add an entry
-app.post(URL_API_PERSONS, (req, res) => {
-  const givenEntryData = req.body
+app.post(URL_API_PERSONS, (request, response, next) => {
+  const givenEntryData = request.body
 
-  let [strErr, cleanedName] =
-        validateNonEmptyString("name", givenEntryData.name)
-  let cleanedPhoneNumber = ""
-  if (strErr.length < 1) {
-    [strErr, cleanedPhoneNumber] =
-        validateNonEmptyString("phone number", givenEntryData.phoneNumber)
-  }
-  if (strErr.length < 1) {
-    const lowercaseName = cleanedName.toLowerCase()
-    const existingEntry = entries.find(entry =>
-      entry.name.toLowerCase() === lowercaseName)
+  const entryToAdd = new Person({
+    name: givenEntryData.name,
+    phoneNumber: givenEntryData.phoneNumber,
+  })
 
-    if (existingEntry) {
-      strErr = "An entry with the given name exists already"
-    }
-  }
-  if (strErr.length > 0) {
-    return res.status(HTTP_STATUS_BAD_REQUEST).json({
-      error: strErr
-    })
-  }
-
-  const entryToAdd = {
-    id: generateEntryId(),
-    name: cleanedName,
-    phoneNumber: cleanedPhoneNumber,
-  }
-
-  entries = entries.concat(entryToAdd)
-
-  res.json(entryToAdd)
+  entryToAdd.save()
+    .then(savedEntry => response.json(savedEntry))
+    .catch(error => next(error))
 })
 
 // Retrieve a single entry
-app.get(URL_API_SINGLE_PERSON, (req, res) => {
-  const entry = findEntryByUsingIdFrom(req)
+app.get(URL_API_SINGLE_PERSON, (request, response, next) => {
+  const idToFind = request.params.id
 
-  if (entry) {
-    res.json(entry)
-  }
-  else {
-    res.status(HTTP_STATUS_NOT_FOUND).end()
-  }
+  Person.findById(idToFind).then(entry => {
+    if (entry)
+      response.json(entry)
+    else
+      response.status(HTTP_STATUS_NOT_FOUND).end()
+  })
+  .catch(error => next(error))
 })
 
 // Delete a single entry
-app.delete(URL_API_SINGLE_PERSON, (req, res) => {
-  const idToDelete = findResourceIdFrom(req)
+app.delete(URL_API_SINGLE_PERSON, (request, response, next) => {
+  const idToDelete = request.params.id
   entries = entries.filter(e => e.id !== idToDelete)
 
-  res.status(HTTP_STATUS_NO_CONTENT).end()
+  response.status(HTTP_STATUS_NO_CONTENT).end()
 })
+
+
+
+const unknownEndpoint = (request, response, next) => {
+  const status = HTTP_STATUS_NOT_FOUND
+  const data = {
+    status: status,
+    errorCode: ERR_UNKNOWN_ENDPOINT,
+    message: ErrorMessages.ERR_UNKNOWN_ENDPOINT,
+  }
+  response.status(status).send(data)
+}
+app.use(unknownEndpoint)
+
+
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error)
+
+  let responseStatus = undefined
+  let responseData = {}
+  if (error.name === "CastError") {
+    if (error.kind === "ObjectId" && error.path === "_id") {
+      responseStatus = HTTP_STATUS_BAD_REQUEST
+      responseData = {
+        status: responseStatus,
+        errors: [
+          {
+            errorCode: ERR_MALFORMATTED_ID,
+            message: ErrorMessages.ERR_MALFORMATTED_ID,
+            originalError: {
+              message: error.message,
+              reason: error.reason.message,
+              value: error.value,
+            },
+          }
+        ],
+      }
+    }
+  }
+  else if (error.name === "ValidationError") {
+    const internalErrors = Object.entries(error.errors)
+    const resultErrors = []
+    internalErrors.forEach(([fieldName, fieldError]) => {
+      let errorCode = undefined
+      const errorProps = fieldError.properties
+      if (errorProps) {
+        const errorKind = fieldError.kind
+        if (errorProps.path === "name") {
+          if (errorKind === "unique") {
+            errorCode = ERR_ENTRY_WITH_NAME_EXISTS
+          }
+          else if (errorKind === "required" || errorKind === "minlength") {
+            errorCode = ERR_NAME_TOO_SHORT
+          }
+        }
+        else if (errorProps.path === "phoneNumber") {
+          if (errorKind === "required" || errorKind === "minlength") {
+            errorCode = ERR_PHONENUMBER_TOO_SHORT
+          }
+        }
+
+        if (errorCode) {
+          resultErrors.push({
+            errorCode: errorCode,
+            message: ErrorMessages[errorCode],
+            value: errorProps.value,
+            originalError: {
+              message: errorProps.message,
+              kind: errorKind,
+              path: errorProps.path,
+            },
+          })
+        }
+      }
+    })
+
+    if (resultErrors.length > 0) {
+      responseStatus = HTTP_STATUS_BAD_REQUEST
+      responseData = {
+        status: responseStatus,
+        errors: resultErrors,
+      }
+    }
+  }
+
+  if (responseStatus) {
+    return response.status(responseStatus).send(responseData)
+  }
+
+  next(error)
+}
+app.use(errorHandler)
+
 
 
 
