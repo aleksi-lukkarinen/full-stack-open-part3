@@ -84,14 +84,14 @@ app.get(URL_BASE, (request, response) => {
 
 // Generate the info page
 app.get(URL_INFO, (request, response) => {
-  const nowDate = new Date()
+  const timestamp = new Date()
 
   Person.find({})
     .then(entries => {
       let content = "<h1>Phonebook Server: Status</h1>"
       content += `<div>Phonebook has info for ${entries.length} people</div>`
       content += "<br/>"
-      content += `<div>${nowDate}</div>`
+      content += `<div>${timestamp}</div>`
 
       response.send(content)
     })
