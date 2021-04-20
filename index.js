@@ -182,6 +182,22 @@ app.post(URL_API_PERSONS, (request, response, next) => {
     .catch(error => next(error))
 })
 
+// Add an entry
+app.put(URL_API_SINGLE_PERSON, (request, response, next) => {
+  const givenEntryData = request.body
+
+  const entryToUpdate = {
+    name: givenEntryData.name,
+    phoneNumber: givenEntryData.phoneNumber,
+  }
+
+  Person.findByIdAndUpdate(request.params.id, entryToUpdate, {new: true})
+    .then(updatedEntry => {
+      response.json(updatedEntry)
+    })
+    .catch(error => next(error))
+})
+
 // Retrieve a single entry
 app.get(URL_API_SINGLE_PERSON, (request, response, next) => {
   const idToFind = request.params.id
