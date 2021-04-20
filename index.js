@@ -26,69 +26,6 @@ const ERR_ENTRY_WITH_ID_DOES_NOT_EXIST = ERR_FIRST + 3
 const ERR_NAME_TOO_SHORT = ERR_FIRST + 4
 const ERR_PHONENUMBER_TOO_SHORT = ERR_FIRST + 5
 
-let entries = [
-  {
-    "id": 1,
-    "name": "Arto Hellas",
-    "phoneNumber": "+358 000 123 4567"
-  },
-  {
-    "id": 2,
-    "name": "Ada Lovelace",
-    "phoneNumber": "39-44-5323523"
-  },
-  {
-    "id": 3,
-    "name": "Bart Simpson",
-    "phoneNumber": "SPRINGVILLE-3599 2863"
-  },
-  {
-    "id": 4,
-    "name": "Dan Abramov",
-    "phoneNumber": "12-43-234345"
-  },
-  {
-    "id": 5,
-    "name": "Darth Vader",
-    "phoneNumber": "DEATHSTAR-9911 9119"
-  },
-  {
-    "id": 6,
-    "name": "James T. Kirk",
-    "phoneNumber": "ENTERPRISE-000 0001"
-  },
-  {
-    "id": 7,
-    "name": "Lisa Simpson",
-    "phoneNumber": "SPRINGVILLE-1291 5595"
-  },
-  {
-    "id": 8,
-    "name": "Mary Poppendieck",
-    "phoneNumber": "39-23-6423122"
-  },
-  {
-    "id": 9,
-    "name": "Scrooge McDuck",
-    "phoneNumber": "DUCKBURG-9588 2538"
-  },
-  {
-    "name": "Donald Duck",
-    "phoneNumber": "DUCKBURG-313 1313",
-    "id": 10
-  },
-  {
-    "name": "Gyro Gearloose",
-    "phoneNumber": "DUCKBURG-999 1243 6978",
-    "id": 11
-  },
-  {
-    "name": "Roger Rabbit",
-    "phoneNumber": "TOONTOWN-1928 7364",
-    "id": 12
-  }
-]
-
 const PersonModule = require("./models/person")
 const Person = PersonModule.model
 
@@ -149,12 +86,16 @@ app.get(URL_BASE, (request, response) => {
 app.get(URL_INFO, (request, response) => {
   const nowDate = new Date()
 
-  let content = "<h1>Phonebook Server: Status</h1>"
-  content += `<div>Phonebook has info for ${entries.length} people</div>`
-  content += "<br/>"
-  content += `<div>${nowDate}</div>`
+  Person.find({})
+    .then(entries => {
+      let content = "<h1>Phonebook Server: Status</h1>"
+      content += `<div>Phonebook has info for ${entries.length} people</div>`
+      content += "<br/>"
+      content += `<div>${nowDate}</div>`
 
-  response.send(content)
+      response.send(content)
+    })
+    .catch(error => next(error))
 })
 
 // Retrieve all entries
@@ -182,7 +123,7 @@ app.post(URL_API_PERSONS, (request, response, next) => {
     .catch(error => next(error))
 })
 
-// Add an entry
+// Update an entry
 app.put(URL_API_SINGLE_PERSON, (request, response, next) => {
   const givenEntryData = request.body
 

@@ -1,3 +1,13 @@
+// Some test data:
+//   Bart Simpson   SPRINGVILLE-3599 2863
+//   Darth Vader    DEATHSTAR-9911 9119
+//   James T. Kirk  ENTERPRISE-000 0001
+//   Lisa Simpson   SPRINGVILLE-1291 5595
+//   Scrooge McDuck DUCKBURG-9588 2538
+//   Donald Duck    DUCKBURG-313 1313
+//   Gyro Gearloose DUCKBURG-999 1243 6978
+//   Roger Rabbit   TOONTOWN-1928 7364
+
 const MONGO_USER_NAME = process.env.MONGO_USER_NAME
 const MONGO_PASSWORD = process.env.MONGO_PASSWORD
 const MONGO_CLUSTER_NAME = process.env.MONGO_CLUSTER_NAME
